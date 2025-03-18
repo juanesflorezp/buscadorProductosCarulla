@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -13,7 +13,7 @@ import time
 st.title("Buscador de Productos en Carulla")
 
 # Subir archivo con códigos de barras
-uploaded_file = st.file_uploader("Sube un archivo CSV con los códigos de barras", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Sube un archivo CSV o Excel con los productos", type=["csv", "xlsx"])
 
 def buscar_productos(df):
     service = Service(ChromeDriverManager().install())
@@ -22,7 +22,7 @@ def buscar_productos(df):
     driver.get('https://www.carulla.com')
     
     for index, row in df.iterrows():
-        codigo_barras = str(row["Código de Barras"]).strip()
+        codigo_barras = str(row["Cód. Barras"]).strip()
         st.write(f"🔍 Buscando código de barras: {codigo_barras}")
         
         try:
