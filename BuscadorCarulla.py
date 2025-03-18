@@ -17,8 +17,11 @@ uploaded_file = st.file_uploader("Sube un archivo CSV o Excel con los productos"
 
 def buscar_productos(df):
     service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
-    driver.maximize_window()
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")  # Ejecutar en modo sin cabeza
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    driver = webdriver.Chrome(service=service, options=options)
     driver.get('https://www.carulla.com')
     
     for index, row in df.iterrows():
