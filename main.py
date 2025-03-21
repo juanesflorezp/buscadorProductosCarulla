@@ -1,16 +1,16 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Response
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import os
 
 app = FastAPI()
 
@@ -42,9 +42,15 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service)
-        driver.maximize_window()
+        # Configurar Selenium con Chrome en Render
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.binary_location = "/opt/render/project/.render/chrome"  # Ubicación de Chrome en Render
+        
+        service = Service("/opt/render/project/.render/chromedriver")  # Ubicación de Chromedriver en Render
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
         for index, row in df.iterrows():
@@ -58,25 +64,19 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.clear()
                 time.sleep(2)
                 
-                for _ in range(21):  
-                    search_field.send_keys(Keys.BACKSPACE)
-                    time.sleep(0.5)
-
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                time.sleep(1)
+                time.sleep(2)
 
                 product = WebDriverWait(driver, 22).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
-                time.sleep(1)
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
-                time.sleep(1)
 
             except TimeoutException:
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
