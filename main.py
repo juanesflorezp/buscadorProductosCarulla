@@ -22,6 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def home():
+    return {"message": "API de Buscador Carulla activa"}
+
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
     try:
@@ -96,6 +100,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         output.seek(0)
         
         return {
+            "message": "Procesamiento completado",
             "row_count": row_count,
             "download_url": "/descargar-excel/"
         }
