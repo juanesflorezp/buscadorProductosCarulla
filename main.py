@@ -51,9 +51,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.binary_location = "/opt/render/project/.render/chrome"  # Ubicación de Chrome en Render
+        chrome_options.binary_location = "/opt/render/project/.render/chrome"
         
-        service = Service("/opt/render/project/.render/chromedriver")  # Ubicación de Chromedriver en Render
+        service = Service("/opt/render/project/.render/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
@@ -71,10 +71,6 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
                 time.sleep(2)
-
-                product = WebDriverWait(driver, 22).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
-                )
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
