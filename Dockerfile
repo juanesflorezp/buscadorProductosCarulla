@@ -1,17 +1,26 @@
-# Usar una imagen de Python con Chrome y Selenium preinstalados
+# Usar una imagen base de Python
 FROM python:3.9
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    curl unzip wget \
-    && rm -rf /var/lib/apt/lists/*
+    unzip \
+    curl \
+    wget \
+    chromium \
+    chromium-driver
 
-# Instalar librerías necesarias
-RUN pip install --no-cache-dir streamlit pandas selenium webdriver-manager
+# Configurar variables de entorno para Chrome y Selenium
+ENV PATH="/usr/lib/chromium/:${PATH}"
+ENV CHROME_BIN="/usr/lib/chromium/chrome"
 
-# Copiar todos los archivos del repo al contenedor
+# Crear directorio de trabajo
 WORKDIR /app
-COPY . .
 
-# Ejecutar la aplicación con Streamlit
-CMD ["streamlit", "run", "ScraperCarulla.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Copiar los archivos del proyecto
+COPY . /app
+
+# Instalar dependencias de Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Ejecutar la API con Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
