@@ -1,4 +1,6 @@
-streamlit
+fastapi
+uvicorn
 pandas
-requests
-beautifulsoup4
+selenium
+webdriver-manager
+xlsxwriter
