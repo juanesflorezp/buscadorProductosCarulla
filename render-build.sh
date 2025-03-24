@@ -1,17 +1,23 @@
 #!/bin/bash
+
 echo "📦 Instalando Chromium y ChromeDriver..."
 
-# Descargar Chromium (si no está preinstalado)
-if [ ! -f /opt/chrome/chrome ]; then
-    mkdir -p /opt/chrome
-    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /opt/chrome/chrome.deb
-    dpkg -x /opt/chrome/chrome.deb /opt/chrome/
-fi
+# Descargar Chromium portátil en la carpeta del proyecto
+mkdir -p chrome
+curl -SL https://storage.googleapis.com/chrome-for-testing-public/122.0.6261.128/linux64/chrome-linux64.zip -o chrome/chrome.zip
+unzip chrome/chrome.zip -d chrome
+chmod +x chrome/chrome-linux64/chrome
 
-# Descargar ChromeDriver
-mkdir -p /opt/chromedriver
-wget https://chromedriver.storage.googleapis.com/$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip -O /opt/chromedriver/chromedriver.zip
-unzip /opt/chromedriver/chromedriver.zip -d /opt/chromedriver/
-chmod +x /opt/chromedriver/chromedriver
+# Descargar ChromeDriver portátil en la carpeta del proyecto
+mkdir -p chromedriver
+curl -SL https://storage.googleapis.com/chrome-for-testing-public/122.0.6261.128/linux64/chromedriver-linux64.zip -o chromedriver/chromedriver.zip
+unzip chromedriver/chromedriver.zip -d chromedriver
+chmod +x chromedriver/chromedriver-linux64/chromedriver
 
 echo "✅ Instalación completada"
+
+# Instalar dependencias con Poetry
+poetry install --no-dev
+
+# Ejecutar la API con Uvicorn
+poetry run uvicorn main:app --host 0.0.0.0 --port 10000
