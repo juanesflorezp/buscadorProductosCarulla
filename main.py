@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 import time
-import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -11,7 +10,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager
 
 app = FastAPI()
 
@@ -51,13 +49,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         # Configurar Selenium con Chrome en Render
         chrome_options = webdriver.ChromeOptions()
+        chrome_options.binary_location = "/opt/render/project/chrome/google-chrome"
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.binary_location = "/usr/bin/google-chrome"
 
-        # Configurar ChromeDriver
-        service = Service(ChromeDriverManager().install())
+        service = Service("/opt/render/project/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
