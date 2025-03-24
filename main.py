@@ -53,9 +53,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.binary_location = "/opt/render/project/chrome/chrome"
+        chrome_options.binary_location = "./chrome/chrome"
 
-        service = Service("/opt/render/project/chromedriver")
+        service = Service("./chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
