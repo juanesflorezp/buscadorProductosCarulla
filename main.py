@@ -10,6 +10,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from webdriver_manager.chrome import ChromeDriverManager
 import os
 
 app = FastAPI()
@@ -55,7 +56,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.binary_location = "/usr/bin/google-chrome-stable"
 
-        service = Service("/usr/bin/chromedriver")
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
@@ -91,6 +92,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             except Exception as e:
                 df.at[index, "Descripción_Carulla"] = "Error"
                 df.at[index, "Precio_Carulla"] = "Error"
+                print(f"❌ Error en la búsqueda: {str(e)}")
 
             time.sleep(2)
 
