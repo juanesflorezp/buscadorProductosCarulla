@@ -4,3 +4,4 @@ selenium
 pandas
 openpyxl
 xlsxwriter
+python-multipart
