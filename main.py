@@ -47,9 +47,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        # Configurar Selenium con Chrome en Render
+        # Configurar Selenium con Chromium
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.binary_location = "/opt/render/project/chrome/google-chrome"
+        chrome_options.binary_location = "/usr/bin/chromium"
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
