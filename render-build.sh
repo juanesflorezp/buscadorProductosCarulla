@@ -1,19 +1,16 @@
 #!/bin/bash
+set -e
 
-# Instalar Google Chrome
 echo "📦 Instalando Google Chrome..."
-wget -q -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-dpkg -i google-chrome.deb || apt-get -f install -y
-rm google-chrome.deb
+curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome.deb
+dpkg -x google-chrome.deb /tmp/google-chrome
+mv /tmp/google-chrome/opt/google/chrome /opt/render/project/chrome
 
-# Instalar ChromeDriver
 echo "📦 Instalando ChromeDriver..."
-CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
-CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
-wget -q -O chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+CHROME_VERSION=$(curl -sL https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+curl -fsSL "https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip" -o chromedriver.zip
 unzip chromedriver.zip
-mv chromedriver /usr/local/bin/
-chmod +x /usr/local/bin/chromedriver
-rm chromedriver.zip
+mv chromedriver /opt/render/project/chromedriver
+chmod +x /opt/render/project/chromedriver
 
-echo "✅ Instalación de Chrome y ChromeDriver completada."
+echo "✅ Instalación completada."
