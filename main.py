@@ -49,13 +49,11 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         # Configurar Selenium con Chromium en Render
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.binary_location = "/opt/google/chrome/chrome"  # Ubicación en Render
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
 
-        service = Service("/usr/bin/chromedriver")
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver = webdriver.Chrome(options=chrome_options)
         driver.get('https://www.carulla.com')
 
         for index, row in df.iterrows():
