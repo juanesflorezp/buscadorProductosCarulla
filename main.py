@@ -49,7 +49,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         # Configurar Selenium con Chromium
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.binary_location = "/usr/bin/chromium"
+        chrome_options.binary_location = "/opt/render/project/chrome/chromium/chrome"  # Nueva ubicación
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
