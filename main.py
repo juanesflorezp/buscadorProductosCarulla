@@ -12,6 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 import os
+import shutil
 
 app = FastAPI()
 
@@ -56,7 +57,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.binary_location = "/usr/bin/google-chrome-stable"
 
-        service = Service(ChromeDriverManager().install())
+        # Verificar si ChromeDriver ya está instalado
+        driver_path = shutil.which("chromedriver")
+        if not driver_path:
+            driver_path = ChromeDriverManager().install()
+
+        service = Service(driver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
