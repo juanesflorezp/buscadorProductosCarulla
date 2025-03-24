@@ -48,7 +48,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        # Configurar Selenium con la versión preinstalada en Render
+        # Configurar Selenium con la versión instalada en Render
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
@@ -74,8 +74,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.send_keys(Keys.ENTER)
                 time.sleep(2)
 
-                articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
-                prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
+                articlename_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
+                )
+                prices_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p'))
+                )
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
