@@ -10,10 +10,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import os
+from webdriver_manager.chrome import ChromeDriverManager
 
 app = FastAPI()
 
+# Configurar CORS para permitir acceso desde cualquier origen
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -29,6 +30,7 @@ def home():
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
     try:
+        # Leer el archivo Excel
         contents = await file.read()
         df_original = pd.read_excel(io.BytesIO(contents), 
             usecols=[0, 1, 2, 3, 4, 5, 6], 
@@ -51,9 +53,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.binary_location = "/opt/render/project/.render/chrome"
-        
-        service = Service("/opt/render/project/.render/chromedriver")
+
+        # Descargar y configurar automáticamente ChromeDriver
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
@@ -90,6 +92,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         driver.quit()
         
+        # Guardar los resultados en un archivo Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Resultados')
