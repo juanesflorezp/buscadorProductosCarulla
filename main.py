@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 import time
+import os
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -25,6 +27,21 @@ app.add_middleware(
 @app.get("/")
 def home():
     return {"message": "API de Buscador Carulla activa"}
+
+# Descargar e instalar Chromium y ChromeDriver si no están presentes
+def setup_chromium():
+    os.makedirs("/tmp/chrome", exist_ok=True)
+    os.makedirs("/tmp/chromedriver", exist_ok=True)
+    
+    if not os.path.exists("/tmp/chrome/chromium"): 
+        subprocess.run(["curl", "-L", "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb", "-o", "/tmp/chrome/chromium.deb"], check=True)
+        subprocess.run(["dpkg", "-x", "/tmp/chrome/chromium.deb", "/tmp/chrome"], check=True)
+    
+    if not os.path.exists("/tmp/chromedriver/chromedriver"): 
+        subprocess.run(["curl", "-L", "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip", "-o", "/tmp/chromedriver/chromedriver.zip"], check=True)
+        subprocess.run(["unzip", "/tmp/chromedriver/chromedriver.zip", "-d", "/tmp/chromedriver"], check=True)
+
+setup_chromium()
 
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
@@ -49,12 +66,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         # Configurar Selenium con Chromium
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.binary_location = "/usr/bin/chromium"  # Nueva ubicación
+        chrome_options.binary_location = "/tmp/chrome/opt/google/chrome/chrome"  # Nueva ubicación
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
 
-        service = Service("/usr/bin/chromedriver")
+        service = Service("/tmp/chromedriver/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
