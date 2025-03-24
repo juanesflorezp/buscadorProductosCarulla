@@ -57,16 +57,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--disable-dev-shm-usage")
         
         # Especificar ubicación de Chrome si es necesario
-        chrome_path = shutil.which("google-chrome-stable")
-        if chrome_path:
-            chrome_options.binary_location = chrome_path
-
-        # Verificar si ChromeDriver ya está instalado
-        driver_path = shutil.which("chromedriver")
-        if not driver_path:
-            driver_path = ChromeDriverManager().install()
-
-        service = Service(driver_path)
+        chrome_options.binary_location = "/usr/bin/google-chrome-stable"
+        service = Service("/usr/local/bin/chromedriver")
+        
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get('https://www.carulla.com')
 
