@@ -49,39 +49,36 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        # Buscar ubicación de Chromium
-        chromium_path = shutil.which("chromium-browser")
-        if chromium_path:
-            print(f"Chromium encontrado en: {chromium_path}")
-        else:
-            print("Chromium no encontrado, probando con rutas comunes...")
-
-        # Configurar Selenium para Render
+        # Configuración del navegador Chromium para Render
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
 
-        # Intentar con varias ubicaciones comunes de Chromium
-        chromium_binary_locations = [
-            chromium_path,
-            "/usr/bin/chromium-browser",
-            "/usr/local/bin/chromium",
-            "/opt/chromium/chrome"
-        ]
-        
-        for path in chromium_binary_locations:
-            try:
-                if path:
+        # Aquí estamos intentando usar la ubicación predeterminada de Chromium en el entorno Render
+        chromium_path = shutil.which("chromium")
+        if chromium_path:
+            print(f"Chromium encontrado en: {chromium_path}")
+            chrome_options.binary_location = chromium_path
+        else:
+            # Si no se encuentra, intentamos rutas comunes en entornos de contenedor
+            chromium_binary_locations = [
+                "/usr/bin/chromium-browser",
+                "/usr/local/bin/chromium",
+                "/opt/chromium/chrome"
+            ]
+            for path in chromium_binary_locations:
+                try:
                     chrome_options.binary_location = path
-                service = Service(ChromeDriverManager().install())
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                print(f"Chromium encontrado y cargado desde: {path}")
-                break
-            except Exception as e:
-                print(f"Error al cargar desde {path}: {str(e)}")
+                    # Intentamos iniciar el driver con la ruta configurada
+                    service = Service(ChromeDriverManager().install())
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                    print(f"Chromium cargado correctamente desde: {path}")
+                    break
+                except Exception as e:
+                    print(f"Error al cargar desde {path}: {str(e)}")
 
-        # Si driver sigue siendo None, no continuamos con la búsqueda
+        # Si driver sigue siendo None, significa que no se pudo iniciar Chromium
         if driver is None:
             return {"error": "No se pudo iniciar Chromium, verifique la configuración del entorno"}
 
