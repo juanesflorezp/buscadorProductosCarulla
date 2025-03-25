@@ -7,8 +7,9 @@ apt-get update && apt-get install -y wget curl unzip
 wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 apt install -y ./google-chrome-stable_current_amd64.deb
 
-# Verificar instalación de Chrome
+# Verificar instalación de Chrome y mostrar la ruta
 google-chrome --version
+which google-chrome  # Esto te dará la ruta exacta de Google Chrome
 
 # Instalar ChromeDriver compatible con la versión de Chrome
 CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
