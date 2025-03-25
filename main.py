@@ -60,7 +60,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"Chromium encontrado en: {chromium_path}")
             chrome_options.binary_location = chromium_path
         else:
-            # Si no se encuentra, intentamos rutas comunes en entornos de contenedor
+            print("Chromium no encontrado, intentando rutas comunes...")
             chromium_binary_locations = [
                 "/usr/bin/chromium-browser",
                 "/usr/local/bin/chromium",
@@ -68,14 +68,17 @@ async def procesar_archivo(file: UploadFile = File(...)):
             ]
             for path in chromium_binary_locations:
                 try:
+                    print(f"Intentando cargar Chromium desde: {path}")
                     chrome_options.binary_location = path
-                    # Intentamos iniciar el driver con la ruta configurada
                     service = Service(ChromeDriverManager().install())
                     driver = webdriver.Chrome(service=service, options=chrome_options)
                     print(f"Chromium cargado correctamente desde: {path}")
                     break
                 except Exception as e:
                     print(f"Error al cargar desde {path}: {str(e)}")
+                    # Si es el último intento, asegurarse de que se captura la excepción
+                    if path == chromium_binary_locations[-1]:
+                        return {"error": f"No se pudo iniciar Chromium desde ninguna de las rutas: {str(e)}"}
 
         # Si driver sigue siendo None, significa que no se pudo iniciar Chromium
         if driver is None:
