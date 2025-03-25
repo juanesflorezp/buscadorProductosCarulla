@@ -11,7 +11,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 app = FastAPI()
 
@@ -29,7 +28,7 @@ def read_root():
 
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
-    driver = None  # Inicializamos driver como None por si no se puede crear
+    driver = None
     try:
         contents = await file.read()
         df_original = pd.read_excel(io.BytesIO(contents), 
@@ -48,25 +47,20 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        # Configuración del navegador Chromium para Render
+        # Configuración del navegador Chromium
         chrome_options = Options()
-        chrome_options.add_argument("--no-sandbox")  # Desactiva el sandbox, necesario en algunos entornos
-        chrome_options.add_argument("--disable-dev-shm-usage")  # Previene errores relacionados con la memoria compartida
-        chrome_options.add_argument("--disable-gpu")  # Desactiva el uso de GPU (útil cuando no hay acceso a una pantalla)
-        chrome_options.add_argument("--remote-debugging-port=9222")  # Habilita el puerto de depuración remoto
-        chrome_options.add_argument("--single-process")  # Ejecuta Chromium en un solo proceso
-        chrome_options.add_argument("--no-zygote")  # Desactiva zygote (otro mecanismo de sandboxing)
-
-        # Usamos la ruta de Chromium en Render directamente
+        chrome_options.add_argument("--no-sandbox")  
+        chrome_options.add_argument("--disable-dev-shm-usage")  
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        # Eliminamos el modo headless para que se vea la interfaz gráfica
+        
+        # Ubicación de Chromium
         chromium_path = "/usr/bin/chromium"
         chrome_options.binary_location = chromium_path
 
-        # Si no se puede encontrar Chromium, devolvemos un error
-        if not chromium_path:
-            return {"error": "No se pudo encontrar Chromium en la ubicación esperada"}
-
-        # Configuración del servicio de Selenium usando el controlador de Chrome
-        service = Service(ChromeDriverManager().install())
+        # Inicializar el WebDriver
+        service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         print(f"Chromium cargado correctamente desde: {chromium_path}")
 
