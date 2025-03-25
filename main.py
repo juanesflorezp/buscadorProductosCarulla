@@ -1,59 +1,118 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+import io
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import os
+from selenium.common.exceptions import TimeoutException
 
 app = FastAPI()
 
-# Configuración para Selenium en Render
-CHROMEDRIVER_PATH = "/usr/local/bin/chromedriver"
-CHROME_BINARY_PATH = "/usr/bin/google-chrome"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def get_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # Modo sin interfaz gráfica
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.binary_location = CHROME_BINARY_PATH  # Especificar la ruta de Chrome
-
-    service = Service(CHROMEDRIVER_PATH)  # Usar ChromeDriver instalado manualmente
-    driver = webdriver.Chrome(service=service, options=options)
-    return driver
-
-@app.get("/")
-def read_root():
-    return {"message": "API funcionando correctamente"}
-
-@app.get("/buscar-producto/{nombre}")
-def buscar_producto(nombre: str):
-    driver = get_driver()
-    url = f"https://www.carulla.com/catalogsearch/result/?q={nombre}"
-    driver.get(url)
-
+@app.post("/procesar-excel/")
+async def procesar_archivo(file: UploadFile = File(...)):
     try:
-        # Esperar a que los productos estén visibles
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".product__item"))
+        contents = await file.read()
+        df_original = pd.read_excel(io.BytesIO(contents), 
+            usecols=[0, 1, 2, 3, 4, 5, 6], 
+            names=["Descripción", "Cód. Barras", "Referencia", "CONSULTA", "NETO", "LINEA", "PROVEEDOR"], 
+            skiprows=1
         )
 
-        productos = driver.find_elements(By.CSS_SELECTOR, ".product__item")
+        if df_original.empty:
+            return {"error": "El archivo Excel está vacío o tiene un formato incorrecto"}
 
-        resultados = []
-        for producto in productos[:5]:  # Tomar solo los primeros 5 resultados
+        row_count = len(df_original)
+        print(f"📊 Cantidad de filas en el archivo: {row_count}")
+        
+        df = df_original.copy()
+        df["Descripción_Carulla"] = None
+        df["Precio_Carulla"] = None
+
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service)
+        driver.maximize_window()
+        driver.get('https://www.carulla.com')
+
+        for index, row in df.iterrows():
+            codigo_barras = str(row["Cód. Barras"]).strip()
+            print(f"🔍 Buscando código de barras: {codigo_barras}")
+
             try:
-                titulo = producto.find_element(By.CSS_SELECTOR, ".product__item-title").text
-                precio = producto.find_element(By.CSS_SELECTOR, ".price").text
-                resultados.append({"nombre": titulo, "precio": precio})
-            except Exception:
-                continue  # Si hay un error en un producto, pasar al siguiente
+                search_field = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
+                )
+                search_field.clear()
+                time.sleep(2)
+                
+                for _ in range(21):  
+                    search_field.send_keys(Keys.BACKSPACE)
+                    time.sleep(0.5)
+
+                search_field.send_keys(codigo_barras)  
+                search_field.send_keys(Keys.ENTER)
+                time.sleep(1)
+
+                product = WebDriverWait(driver, 22).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
+                )
+                time.sleep(1)
+
+                articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
+                prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
+
+                df.at[index, "Descripción_Carulla"] = articlename_element.text
+                df.at[index, "Precio_Carulla"] = prices_element.text
+                time.sleep(1)
+
+            except TimeoutException:
+                df.at[index, "Descripción_Carulla"] = "No encontrado"
+                df.at[index, "Precio_Carulla"] = "No encontrado"
+
+            except Exception as e:
+                df.at[index, "Descripción_Carulla"] = "Error"
+                df.at[index, "Precio_Carulla"] = "Error"
+
+            time.sleep(2)
+
+        driver.quit()
+        
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Resultados')
+        output.seek(0)
+        
+        return {
+            "row_count": row_count,
+            "download_url": "/descargar-excel/"
+        }
 
     except Exception as e:
-        return {"error": f"Error al obtener productos: {str(e)}"}
-    
-    finally:
-        driver.quit()  # Cerrar el navegador al final
+        return {"error": str(e)}
 
-    return {"productos": resultados}
+@app.get("/descargar-excel/")
+def descargar_excel():
+    output = io.BytesIO()
+    df = pd.DataFrame({"Mensaje": ["Archivo generado correctamente"]})
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Resultados')
+    output.seek(0)
+    
+    headers = {
+        "Content-Disposition": "attachment; filename=resultado_carulla.xlsx",
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }
+    return Response(content=output.getvalue(), headers=headers, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
