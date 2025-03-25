@@ -12,6 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import shutil
 
 app = FastAPI()
 
@@ -47,46 +48,64 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
+        # Buscar ubicación de Chrome
+        chrome_path = shutil.which("google-chrome-stable")
+        if chrome_path:
+            print(f"Chrome encontrado en: {chrome_path}")
+        else:
+            print("Chrome no encontrado, probando con rutas comunes...")
+
         # Configurar Selenium para Render
         chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Ejecutar sin interfaz gráfica
-        chrome_options.add_argument("--no-sandbox")  # Solución para render sin interfaz gráfica
-        chrome_options.add_argument("--disable-dev-shm-usage")  # Para evitar errores de memoria
-        chrome_options.binary_location = "/usr/bin/google-chrome"  # Ubicación de Chrome en el servidor de Render
-        
-        service = Service(ChromeDriverManager().install())  # Instalar el chromedriver automáticamente
-        driver = webdriver.Chrome(service=service, options=chrome_options)  # Iniciar el driver
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
 
-        driver.get('https://www.carulla.com')  # Abrir página de Carulla
+        # Intentar con varias ubicaciones comunes de Chrome
+        chrome_binary_locations = [
+            chrome_path,
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium-browser",
+            "/opt/google/chrome/chrome"
+        ]
+        
+        for path in chrome_binary_locations:
+            try:
+                if path:
+                    chrome_options.binary_location = path
+                service = Service(ChromeDriverManager().install())
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                print(f"Chrome encontrado y cargado desde: {path}")
+                break
+            except Exception as e:
+                print(f"Error al cargar desde {path}: {str(e)}")
+
+        driver.get('https://www.carulla.com')
 
         for index, row in df.iterrows():
             codigo_barras = str(row["Cód. Barras"]).strip()
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                # Buscar el campo de búsqueda y limpiar
                 search_field = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
                 time.sleep(2)
                 
-                # Eliminar texto previo y buscar el nuevo código de barras
                 for _ in range(21):  
                     search_field.send_keys(Keys.BACKSPACE)
                     time.sleep(0.5)
 
-                search_field.send_keys(codigo_barras)  # Ingresar el código de barras
-                search_field.send_keys(Keys.ENTER)  # Iniciar búsqueda
+                search_field.send_keys(codigo_barras)  
+                search_field.send_keys(Keys.ENTER)
                 time.sleep(1)
 
-                # Esperar hasta que el producto esté visible
                 product = WebDriverWait(driver, 22).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
                 time.sleep(1)
 
-                # Obtener la descripción y el precio
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
 
@@ -104,9 +123,8 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
             time.sleep(2)
 
-        driver.quit()  # Cerrar el navegador después de la búsqueda
+        driver.quit()
         
-        # Preparar el archivo Excel de resultados
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Resultados')
