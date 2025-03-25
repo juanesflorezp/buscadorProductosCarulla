@@ -1,14 +1,17 @@
-# Usa una imagen base con Python
+# Usamos una imagen base con Python
 FROM python:3.9-slim
 
-# Actualizamos el sistema e instalamos Chromium
+# Actualizamos el sistema e instalamos Chromium y sus dependencias
 RUN apt-get update && \
-    apt-get install -y chromium chromium-driver
+    apt-get install -y \
+    chromium \
+    chromium-driver \
+    && rm -rf /var/lib/apt/lists/*
 
 # Establecemos el directorio de trabajo
 WORKDIR /app
 
-# Copiamos los archivos de nuestra aplicación al contenedor
+# Copiamos los archivos de la aplicación al contenedor
 COPY . /app
 
 # Instalamos las dependencias necesarias
