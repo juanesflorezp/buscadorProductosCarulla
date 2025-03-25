@@ -5,3 +5,4 @@ pandas
 openpyxl
 gunicorn
 webdriver-manager
+python-multipart
