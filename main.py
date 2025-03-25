@@ -50,8 +50,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         # Configuración del navegador Chromium para Render
         chrome_options = Options()
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")  # Desactiva el sandbox, necesario en algunos entornos
+        chrome_options.add_argument("--disable-dev-shm-usage")  # Previene errores relacionados con la memoria compartida
+        chrome_options.add_argument("--disable-gpu")  # Desactiva el uso de GPU (útil cuando no hay acceso a una pantalla)
+        chrome_options.add_argument("--remote-debugging-port=9222")  # Habilita el puerto de depuración remoto
+        chrome_options.add_argument("--single-process")  # Ejecuta Chromium en un solo proceso
+        chrome_options.add_argument("--no-zygote")  # Desactiva zygote (otro mecanismo de sandboxing)
 
         # Usamos la ruta de Chromium en Render directamente
         chromium_path = "/usr/bin/chromium"
