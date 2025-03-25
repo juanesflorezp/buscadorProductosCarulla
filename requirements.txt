@@ -1,8 +1,4 @@
 fastapi
 uvicorn
 selenium
-pandas
-openpyxl
-xlsxwriter
-python-multipart
 webdriver-manager
