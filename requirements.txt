@@ -3,3 +3,4 @@ uvicorn
 pandas
 selenium
 webdriver-manager
+python-multipart
