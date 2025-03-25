@@ -72,7 +72,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 10).until(
+                search_field = WebDriverWait(driver, 20).until(  # Aumentar timeout a 20s
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
@@ -84,19 +84,19 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                time.sleep(1)
+                time.sleep(2)
 
-                product = WebDriverWait(driver, 22).until(
+                product = WebDriverWait(driver, 30).until(  # Aumentar timeout a 30s
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
-                time.sleep(1)
+                time.sleep(2)
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
-                time.sleep(1)
+                time.sleep(2)
 
             except TimeoutException:
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
@@ -107,7 +107,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 df.at[index, "Precio_Carulla"] = "Error"
                 print(f"Error en la búsqueda: {e}")
 
-            time.sleep(2)
+            time.sleep(3)
 
         driver.quit()
         
