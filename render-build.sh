@@ -1,17 +1,14 @@
 #!/bin/bash
 
 # Instalar dependencias básicas
-apt-get update && apt-get install -y wget curl unzip 
+apt-get update && apt-get install -y wget curl unzip
 
 # Instalar Google Chrome
 wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 apt install -y ./google-chrome-stable_current_amd64.deb
 
 # Verificar instalación de Chrome
-echo "Verificando instalación de Google Chrome..."
 google-chrome --version
-# Verificar la ubicación de Google Chrome
-which google-chrome
 
 # Instalar ChromeDriver compatible con la versión de Chrome
 CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
@@ -21,7 +18,4 @@ unzip chromedriver_linux64.zip -d /usr/local/bin/
 chmod +x /usr/local/bin/chromedriver
 
 # Verificar instalación de ChromeDriver
-echo "Verificando instalación de ChromeDriver..."
 chromedriver --version
-# Verificar la ubicación de ChromeDriver
-which chromedriver
