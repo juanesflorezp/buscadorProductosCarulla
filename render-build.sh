@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 
 # Instalar dependencias básicas
 apt-get update && apt-get install -y wget curl unzip 
