@@ -30,6 +30,7 @@ def read_root():
 
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
+    driver = None  # Inicializamos driver como None por si no se puede crear
     try:
         contents = await file.read()
         df_original = pd.read_excel(io.BytesIO(contents), 
@@ -48,12 +49,12 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
-        # Buscar ubicación de Chrome
-        chrome_path = shutil.which("google-chrome-stable")
-        if chrome_path:
-            print(f"Chrome encontrado en: {chrome_path}")
+        # Buscar ubicación de Chromium
+        chromium_path = shutil.which("chromium-browser")
+        if chromium_path:
+            print(f"Chromium encontrado en: {chromium_path}")
         else:
-            print("Chrome no encontrado, probando con rutas comunes...")
+            print("Chromium no encontrado, probando con rutas comunes...")
 
         # Configurar Selenium para Render
         chrome_options = Options()
@@ -61,24 +62,28 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
 
-        # Intentar con varias ubicaciones comunes de Chrome
-        chrome_binary_locations = [
-            chrome_path,
-            "/usr/bin/google-chrome-stable",
+        # Intentar con varias ubicaciones comunes de Chromium
+        chromium_binary_locations = [
+            chromium_path,
             "/usr/bin/chromium-browser",
-            "/opt/google/chrome/chrome"
+            "/usr/local/bin/chromium",
+            "/opt/chromium/chrome"
         ]
         
-        for path in chrome_binary_locations:
+        for path in chromium_binary_locations:
             try:
                 if path:
                     chrome_options.binary_location = path
                 service = Service(ChromeDriverManager().install())
                 driver = webdriver.Chrome(service=service, options=chrome_options)
-                print(f"Chrome encontrado y cargado desde: {path}")
+                print(f"Chromium encontrado y cargado desde: {path}")
                 break
             except Exception as e:
                 print(f"Error al cargar desde {path}: {str(e)}")
+
+        # Si driver sigue siendo None, no continuamos con la búsqueda
+        if driver is None:
+            return {"error": "No se pudo iniciar Chromium, verifique la configuración del entorno"}
 
         driver.get('https://www.carulla.com')
 
