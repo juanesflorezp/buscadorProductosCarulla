@@ -52,7 +52,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--remote-debugging-port=9222
+        chrome_options.add_argument("--remote-debugging-port=9222")
         chrome_options.add_argument("--user-data-dir=/tmp/chrome-profile")
 
         # Eliminamos el modo headless para que se vea la interfaz gráfica
