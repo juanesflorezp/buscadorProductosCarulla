@@ -59,11 +59,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chromium_path = "/usr/bin/chromium"
         chrome_options.binary_location = chromium_path
 
-        # Generar un directorio temporal único para cada sesión de Chrome
-        temp_user_data_dir = tempfile.mkdtemp()
-        chrome_options.add_argument(f"--user-data-dir={temp_user_data_dir}")
-
-        # Inicializar el WebDriver
+        # Inicializar el WebDriver sin --user-data-dir
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         print(f"Chromium cargado correctamente desde: {chromium_path}")
@@ -108,6 +104,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             except Exception as e:
                 df.at[index, "Descripción_Carulla"] = "Error"
                 df.at[index, "Precio_Carulla"] = "Error"
+                print(f"Error en la búsqueda: {e}")
 
             time.sleep(2)
 
@@ -124,6 +121,8 @@ async def procesar_archivo(file: UploadFile = File(...)):
         }
 
     except Exception as e:
+        if driver:
+            driver.quit()
         return {"error": str(e)}
 
 @app.get("/descargar-excel/")
