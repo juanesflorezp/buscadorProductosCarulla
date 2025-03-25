@@ -20,3 +20,11 @@ chmod +x /usr/local/bin/chromedriver
 
 # Verificar instalación de ChromeDriver
 chromedriver --version
+
+# Instalar Chromium
+apt-get update && apt-get install -y chromium-browser
+
+# Verificar instalación de Chromium
+chromium-browser --version
+which chromium-browser  # Esto te dará la ruta exacta de Chromium
+
