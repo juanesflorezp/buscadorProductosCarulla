@@ -53,13 +53,14 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--headless=new")  # Modo sin interfaz gráfica
+        chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")  # Perfil temporal único
         
         # Ubicación de Chromium
         chromium_path = "/usr/bin/chromium"
         chrome_options.binary_location = chromium_path
 
-        # Inicializar el WebDriver sin --user-data-dir
+        # Inicializar el WebDriver sin conflictos
         service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=chrome_options)
         print(f"Chromium cargado correctamente desde: {chromium_path}")
