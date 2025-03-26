@@ -7,3 +7,4 @@ gunicorn
 webdriver-manager
 python-multipart
 psutil
+xlsxwriter
