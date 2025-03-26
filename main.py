@@ -4,6 +4,8 @@ import pandas as pd
 import io
 import time
 import tempfile
+import os
+import psutil
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -22,6 +24,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def kill_existing_chrome():
+    for proc in psutil.process_iter(attrs=['pid', 'name']):
+        if 'chrome' in proc.info['name'].lower():
+            try:
+                proc.kill()
+            except psutil.NoSuchProcess:
+                pass
 
 @app.get("/")
 def read_root():
@@ -53,9 +63,10 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")  # Perfil temporal único
+        chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")  # Directorio único
         
-        # Eliminar la opción headless para ver el navegador
+        # Eliminar procesos previos de Chrome
+        kill_existing_chrome()
         
         # Ubicación de Chromium
         chromium_path = "/usr/bin/chromium"
@@ -74,7 +85,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 60).until(  # Aumentar timeout a 60s
+                search_field = WebDriverWait(driver, 60).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
@@ -88,7 +99,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.send_keys(Keys.ENTER)
                 time.sleep(5)
 
-                product = WebDriverWait(driver, 70).until(  # Aumentar timeout a 70s
+                product = WebDriverWait(driver, 70).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
                 time.sleep(5)
