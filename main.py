@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import TimeoutException, WebDriverException, NoSuchWindowException
 from selenium.webdriver.chrome.options import Options
 
 app = FastAPI()
@@ -63,9 +63,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless")  # Ahora el navegador es sin interfaz gráfica
         chrome_options.add_argument("--remote-debugging-port=9222")
         chrome_options.add_argument("--timeout=180")
+        # Se elimina headless para que se vea el navegador
         
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
@@ -91,7 +91,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 20).until(
+                search_field = WebDriverWait(driver, 30).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
@@ -99,7 +99,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.send_keys(Keys.ENTER)
                 time.sleep(5)
 
-                product = WebDriverWait(driver, 20).until(
+                product = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
                 
@@ -109,7 +109,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
 
-            except TimeoutException:
+            except (TimeoutException, NoSuchWindowException):
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
                 df.at[index, "Precio_Carulla"] = "No encontrado"
             except Exception as e:
