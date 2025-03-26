@@ -63,7 +63,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")  # Directorio único
+        chrome_options.add_argument("--headless")  # Ahora el navegador es sin interfaz gráfica
         
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
@@ -85,31 +85,23 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 60).until(
+                search_field = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
-                time.sleep(3)
-                
-                for _ in range(25):  
-                    search_field.send_keys(Keys.BACKSPACE)
-                    time.sleep(0.6)
-
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                time.sleep(5)
+                time.sleep(3)
 
-                product = WebDriverWait(driver, 70).until(
+                product = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
-                time.sleep(5)
-
+                
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
-                time.sleep(5)
 
             except TimeoutException:
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
@@ -119,8 +111,6 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 df.at[index, "Descripción_Carulla"] = "Error"
                 df.at[index, "Precio_Carulla"] = "Error"
                 print(f"Error en la búsqueda: {e}")
-
-            time.sleep(6)
 
         driver.quit()
         
