@@ -73,7 +73,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 40).until(  # Aumentar timeout a 40s
+                search_field = WebDriverWait(driver, 60).until(  # Aumentar timeout a 60s
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
@@ -87,7 +87,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 search_field.send_keys(Keys.ENTER)
                 time.sleep(5)
 
-                product = WebDriverWait(driver, 50).until(  # Aumentar timeout a 50s
+                product = WebDriverWait(driver, 70).until(  # Aumentar timeout a 70s
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
                 time.sleep(5)
