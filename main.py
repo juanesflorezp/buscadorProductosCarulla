@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException, NoSuchWindowException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, WebDriverException, NoSuchWindowException
 from selenium.webdriver.chrome.options import Options
 
 app = FastAPI()
@@ -66,7 +66,6 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless")  # Modo sin interfaz gráfica
 
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
@@ -78,31 +77,20 @@ async def procesar_archivo(file: UploadFile = File(...)):
         print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
 
         driver.get('https://www.carulla.com')
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
-        )
+        time.sleep(5)
 
         for index, row in df.iterrows():
             codigo_barras = str(row["Cód. Barras"]).strip()
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 10).until(
+                search_field = WebDriverWait(driver, 30).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                
-                WebDriverWait(driver, 20).until(
-                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]'))
-                )
-
-                no_results_xpath = '//*[contains(text(), "No encontramos")]'
-                if len(driver.find_elements(By.XPATH, no_results_xpath)) > 0:
-                    df.at[index, "Descripción_Carulla"] = "No encontrado"
-                    df.at[index, "Precio_Carulla"] = "No encontrado"
-                    continue
+                time.sleep(5)
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
@@ -110,7 +98,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
 
-            except (TimeoutException, NoSuchWindowException, NoSuchElementException):
+            except (TimeoutException, NoSuchWindowException):
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
                 df.at[index, "Precio_Carulla"] = "No encontrado"
             except Exception as e:
@@ -125,13 +113,10 @@ async def procesar_archivo(file: UploadFile = File(...)):
             df.to_excel(writer, index=False, sheet_name='Resultados')
         output.seek(0)
         
-        return Response(
-            content=output.getvalue(),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={
-                "Content-Disposition": "attachment; filename=resultado_carulla.xlsx"
-            }
-        )
+        return {
+            "row_count": row_count,
+            "download_url": "/descargar-excel/"
+        }
 
     except Exception as e:
         if driver:
