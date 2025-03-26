@@ -64,6 +64,8 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--headless")  # Ahora el navegador es sin interfaz gráfica
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--timeout=180")
         
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
@@ -85,15 +87,15 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 10).until(
+                search_field = WebDriverWait(driver, 20).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                time.sleep(3)
+                time.sleep(5)
 
-                product = WebDriverWait(driver, 10).until(
+                product = WebDriverWait(driver, 20).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
                 
