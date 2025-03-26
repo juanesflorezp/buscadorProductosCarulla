@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 
 app = FastAPI()
@@ -75,9 +75,13 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.binary_location = chromium_path
 
         # Inicializar el WebDriver sin conflictos
-        service = Service("/usr/bin/chromedriver")
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        print(f"Chromium cargado correctamente desde: {chromium_path}")
+        try:
+            service = Service("/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            print(f"✅ Chromium cargado correctamente desde: {chromium_path}")
+        except WebDriverException as e:
+            print(f"❌ Error al iniciar WebDriver: {e}")
+            return {"error": "No se pudo iniciar el WebDriver"}
 
         driver.get('https://www.carulla.com')
         time.sleep(5)
@@ -108,11 +112,10 @@ async def procesar_archivo(file: UploadFile = File(...)):
             except TimeoutException:
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
                 df.at[index, "Precio_Carulla"] = "No encontrado"
-
             except Exception as e:
                 df.at[index, "Descripción_Carulla"] = "Error"
                 df.at[index, "Precio_Carulla"] = "Error"
-                print(f"Error en la búsqueda: {e}")
+                print(f"⚠️ Error en la búsqueda: {e}")
 
         driver.quit()
         
