@@ -53,8 +53,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless=new")  # Modo sin interfaz gráfica
         chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")  # Perfil temporal único
+        
+        # Eliminar la opción headless para ver el navegador
         
         # Ubicación de Chromium
         chromium_path = "/usr/bin/chromium"
