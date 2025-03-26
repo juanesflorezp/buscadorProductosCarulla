@@ -114,10 +114,13 @@ async def procesar_archivo(file: UploadFile = File(...)):
             df.to_excel(writer, index=False, sheet_name='Resultados')
         output.seek(0)
         
-        return {
-            "row_count": row_count,
-            "download_url": "/descargar-excel/"
-        }
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": "attachment; filename=resultado_carulla.xlsx"
+            }
+        )
 
     except Exception as e:
         if driver:
