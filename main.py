@@ -66,37 +66,38 @@ async def procesar_archivo(file: UploadFile = File(...)):
         print(f"Chromium cargado correctamente desde: {chromium_path}")
 
         driver.get('https://www.carulla.com')
+        time.sleep(5)
 
         for index, row in df.iterrows():
             codigo_barras = str(row["Cód. Barras"]).strip()
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 30).until(  # Aumentar timeout a 30s
+                search_field = WebDriverWait(driver, 40).until(  # Aumentar timeout a 40s
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
-                time.sleep(2)
+                time.sleep(3)
                 
-                for _ in range(21):  
+                for _ in range(25):  
                     search_field.send_keys(Keys.BACKSPACE)
-                    time.sleep(0.5)
+                    time.sleep(0.6)
 
                 search_field.send_keys(codigo_barras)  
                 search_field.send_keys(Keys.ENTER)
-                time.sleep(3)
+                time.sleep(5)
 
-                product = WebDriverWait(driver, 40).until(  # Aumentar timeout a 40s
+                product = WebDriverWait(driver, 50).until(  # Aumentar timeout a 50s
                     EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3'))
                 )
-                time.sleep(3)
+                time.sleep(5)
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
                 prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
-                time.sleep(3)
+                time.sleep(5)
 
             except TimeoutException:
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
@@ -107,7 +108,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 df.at[index, "Precio_Carulla"] = "Error"
                 print(f"Error en la búsqueda: {e}")
 
-            time.sleep(4)
+            time.sleep(6)
 
         driver.quit()
         
