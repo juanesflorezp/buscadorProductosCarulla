@@ -38,7 +38,7 @@ def read_root():
 
 @app.get("/chromedriver-path/")
 def get_chromedriver_path():
-    chromedriver_path = "/usr/bin/chromium"
+    chromedriver_path = "/usr/bin/chromedriver"
     return {"chromedriver_path": chromedriver_path}
 
 @app.post("/procesar-excel/")
@@ -67,21 +67,20 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        # chrome_options.add_argument("--headless")  # Comentado para permitir la interfaz gráfica
+        chrome_options.add_argument("--headless")  # Modo sin interfaz gráfica
         chrome_options.add_argument("--remote-debugging-port=9222")
-        chrome_options.add_argument("--guest")
 
         temp_dir = tempfile.mkdtemp()
         chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
-        # Eliminar procesos previos de Chrome
+        # Eliminar procesos previos de Chromium
         kill_existing_chrome()
         
         # Inicializar el WebDriver con Chromium
-        chromedriver_path = "/usr/bin/chromium"
+        chromedriver_path = "/usr/bin/chromedriver"
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        print(f"✅ Chromium cargado correctamente desde: {chromedriver_path}")
+        print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
 
         driver.get('https://www.carulla.com')
         WebDriverWait(driver, 10).until(
