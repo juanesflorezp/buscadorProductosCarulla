@@ -63,26 +63,97 @@ async def procesar_archivo(file: UploadFile = File(...)):
         # Limpiar la columna "Cód. Barras" para que contenga solo números sin espacios
         df_original["Cód. Barras"] = df_original["Cód. Barras"].astype(str).str.replace(r'\D', '', regex=True)
 
-        # Agregar columnas que se van a buscar
+        # Agregar columnas para los resultados de búsqueda
         df_original["Descripción_Carulla"] = None
         df_original["Precio_Carulla"] = None
         df_original["Encontrado"] = None  # Nueva columna para marcar productos encontrados
 
-        # Crear el archivo Excel de respuesta
+        chromium_path = shutil.which("chromium") or "/usr/bin/chromium"
+        chromedriver_path = shutil.which("chromedriver") or "/usr/bin/chromedriver"
+        print(f"🔍 Chromium Path: {chromium_path}")
+        print(f"🔍 ChromeDriver Path: {chromedriver_path}")
+
+        chrome_options = Options()
+        chrome_options.add_argument("--no-sandbox")  
+        chrome_options.add_argument("--disable-dev-shm-usage")  
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--headless")  
+        chrome_options.binary_location = chromium_path
+        
+        temp_dir = tempfile.mkdtemp()
+        chrome_options.add_argument(f"--user-data-dir={temp_dir}")
+
+        kill_existing_chrome()
+        
+        service = Service(chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
+
+        driver.get('https://www.carulla.com')
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
+        )
+
+        # Procesar los productos en el archivo Excel
+        for index, row in df_original.iterrows():
+            codigo_barras = str(row["Cód. Barras"]).strip()
+            print(f"🔍 Buscando código de barras: {codigo_barras}")
+
+            try:
+                search_field = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
+                )
+                search_field.clear()
+                search_field.send_keys(codigo_barras)  
+                search_field.send_keys(Keys.ENTER)
+                
+                WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]'))
+                )
+
+                # Verificar si no se encuentra el producto
+                no_results_xpath = '//*[contains(text(), "No encontramos")]'
+                if len(driver.find_elements(By.XPATH, no_results_xpath)) > 0:
+                    df_original.at[index, "Descripción_Carulla"] = "No encontrado"
+                    df_original.at[index, "Precio_Carulla"] = "No encontrado"
+                    df_original.at[index, "Encontrado"] = "❌"
+                    continue
+
+                articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
+                prices_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/div/div/div[2]/p')
+
+                df_original.at[index, "Descripción_Carulla"] = articlename_element.text
+                df_original.at[index, "Precio_Carulla"] = prices_element.text
+                df_original.at[index, "Encontrado"] = "✅"  # Marcar como encontrado
+
+            except (TimeoutException, NoSuchWindowException, NoSuchElementException):
+                df_original.at[index, "Descripción_Carulla"] = "No encontrado"
+                df_original.at[index, "Precio_Carulla"] = "No encontrado"
+                df_original.at[index, "Encontrado"] = "❌"
+            except Exception as e:
+                df_original.at[index, "Descripción_Carulla"] = "Error"
+                df_original.at[index, "Precio_Carulla"] = "Error"
+                df_original.at[index, "Encontrado"] = "❌"
+                print(f"⚠️ Error en la búsqueda: {e}")
+
+        driver.quit()
+
+        # Crear el archivo Excel con los resultados de búsqueda
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_original.to_excel(writer, index=False, sheet_name='Datos a Buscar')
+            df_original.to_excel(writer, index=False, sheet_name='Resultados')
         output.seek(0)
 
-        # Regresar el archivo Excel con los datos a buscar
+        # Regresar el archivo Excel con los resultados
         return Response(
             content=output.getvalue(),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={
-                "Content-Disposition": "attachment; filename=datos_a_buscar.xlsx"
+                "Content-Disposition": "attachment; filename=resultado_carulla.xlsx"
             }
         )
 
     except Exception as e:
+        if driver:
+            driver.quit()
         return {"error": str(e)}
-
