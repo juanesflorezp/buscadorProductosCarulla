@@ -97,7 +97,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 11).until(
+                search_field = WebDriverWait(driver, 12).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
