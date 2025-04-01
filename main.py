@@ -64,28 +64,25 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df = df_original.copy()
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
+        df["Encontrado"] = None  # Nueva columna para marcar productos encontrados
 
-        # Obtener rutas de Chromium y ChromeDriver
         chromium_path = shutil.which("chromium") or "/usr/bin/chromium"
         chromedriver_path = shutil.which("chromedriver") or "/usr/bin/chromedriver"
         print(f"🔍 Chromium Path: {chromium_path}")
         print(f"🔍 ChromeDriver Path: {chromedriver_path}")
 
-        # Configuración del navegador Chromium
         chrome_options = Options()
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless")  # Modo sin interfaz gráfica
+        chrome_options.add_argument("--headless")  
         chrome_options.binary_location = chromium_path
         
         temp_dir = tempfile.mkdtemp()
         chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
-        # Eliminar procesos previos de Chromium
         kill_existing_chrome()
         
-        # Inicializar el WebDriver con Chromium
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
@@ -100,7 +97,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 13).until(
+                search_field = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
@@ -115,6 +112,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
                 if len(driver.find_elements(By.XPATH, no_results_xpath)) > 0:
                     df.at[index, "Descripción_Carulla"] = "No encontrado"
                     df.at[index, "Precio_Carulla"] = "No encontrado"
+                    df.at[index, "Encontrado"] = "❌"
                     continue
 
                 articlename_element = driver.find_element(By.XPATH, '//*[@id="__next"]/main/section[3]/div/div[2]/div[2]/div[2]/ul/li/article/div[1]/div[2]/a/div/h3')
@@ -122,13 +120,16 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
                 df.at[index, "Descripción_Carulla"] = articlename_element.text
                 df.at[index, "Precio_Carulla"] = prices_element.text
+                df.at[index, "Encontrado"] = "✅"  # Marcar como encontrado
 
             except (TimeoutException, NoSuchWindowException, NoSuchElementException):
                 df.at[index, "Descripción_Carulla"] = "No encontrado"
                 df.at[index, "Precio_Carulla"] = "No encontrado"
+                df.at[index, "Encontrado"] = "❌"
             except Exception as e:
                 df.at[index, "Descripción_Carulla"] = "Error"
                 df.at[index, "Precio_Carulla"] = "Error"
+                df.at[index, "Encontrado"] = "❌"
                 print(f"⚠️ Error en la búsqueda: {e}")
 
         driver.quit()
