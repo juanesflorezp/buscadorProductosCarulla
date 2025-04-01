@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import time
 import psutil
+import tempfile
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -68,6 +69,10 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--disable-gpu")
         # chrome_options.add_argument("--headless")  # Comentado para permitir la interfaz gráfica
         chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--guest")
+
+        temp_dir = tempfile.mkdtemp()
+        chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
