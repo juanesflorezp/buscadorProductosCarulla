@@ -25,7 +25,7 @@ app.add_middleware(
 
 def kill_existing_chrome():
     for proc in psutil.process_iter(attrs=['pid', 'name']):
-        if 'chrome' in proc.info['name'].lower():
+        if 'chrome' in proc.info['name'].lower() or 'chromedriver' in proc.info['name'].lower():
             try:
                 proc.kill()
             except psutil.NoSuchProcess:
@@ -66,6 +66,8 @@ async def procesar_archivo(file: UploadFile = File(...)):
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--headless")  # Comentado para permitir la interfaz gráfica
+        chrome_options.add_argument("--user-data-dir=/tmp/chrome_profile")
 
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
