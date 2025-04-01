@@ -5,6 +5,8 @@ import io
 import time
 import psutil
 import tempfile
+import shutil
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -36,10 +38,11 @@ def kill_existing_chrome():
 def read_root():
     return {"message": "Hello, World!"}
 
-@app.get("/chromedriver-path/")
-def get_chromedriver_path():
-    chromedriver_path = "/usr/bin/chromedriver"
-    return {"chromedriver_path": chromedriver_path}
+@app.get("/chromium-path/")
+def get_chromium_paths():
+    chromium_path = shutil.which("chromium") or "Not found"
+    chromedriver_path = shutil.which("chromedriver") or "Not found"
+    return {"chromium_path": chromium_path, "chromedriver_path": chromedriver_path}
 
 @app.post("/procesar-excel/")
 async def procesar_archivo(file: UploadFile = File(...)):
@@ -62,14 +65,20 @@ async def procesar_archivo(file: UploadFile = File(...)):
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
 
+        # Obtener rutas de Chromium y ChromeDriver
+        chromium_path = shutil.which("chromium") or "/usr/bin/chromium"
+        chromedriver_path = shutil.which("chromedriver") or "/usr/bin/chromedriver"
+        print(f"🔍 Chromium Path: {chromium_path}")
+        print(f"🔍 ChromeDriver Path: {chromedriver_path}")
+
         # Configuración del navegador Chromium
         chrome_options = Options()
         chrome_options.add_argument("--no-sandbox")  
         chrome_options.add_argument("--disable-dev-shm-usage")  
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--headless")  # Modo sin interfaz gráfica
-        chrome_options.add_argument("--remote-debugging-port=9222")
-
+        chrome_options.binary_location = chromium_path
+        
         temp_dir = tempfile.mkdtemp()
         chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
@@ -77,7 +86,6 @@ async def procesar_archivo(file: UploadFile = File(...)):
         kill_existing_chrome()
         
         # Inicializar el WebDriver con Chromium
-        chromedriver_path = "/usr/bin/chromedriver"
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
