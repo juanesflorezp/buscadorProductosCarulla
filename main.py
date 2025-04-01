@@ -38,7 +38,7 @@ def read_root():
 
 @app.get("/chromedriver-path/")
 def get_chromedriver_path():
-    chromedriver_path = "/usr/bin/chromedriver"
+    chromedriver_path = "/usr/bin/chromium"
     return {"chromedriver_path": chromedriver_path}
 
 @app.post("/procesar-excel/")
@@ -77,11 +77,11 @@ async def procesar_archivo(file: UploadFile = File(...)):
         # Eliminar procesos previos de Chrome
         kill_existing_chrome()
         
-        # Inicializar el WebDriver sin conflictos
-        chromedriver_path = "/usr/bin/chromedriver"
+        # Inicializar el WebDriver con Chromium
+        chromedriver_path = "/usr/bin/chromium"
         service = Service(chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
+        print(f"✅ Chromium cargado correctamente desde: {chromedriver_path}")
 
         driver.get('https://www.carulla.com')
         WebDriverWait(driver, 10).until(
