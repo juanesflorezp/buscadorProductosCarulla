@@ -94,7 +94,6 @@ async def procesar_archivo(file: UploadFile = File(...)):
 
         for index, row in df.iterrows():
             codigo_barras = str(row["Cód. Barras"]).strip()
-            codigo_barras = ''.join(filter(str.isdigit, codigo_barras))  # Convertir a número y eliminar espacios
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
