@@ -34,6 +34,9 @@ async def procesar_archivo(file: UploadFile = File(...)):
         if df_original.empty:
             return {"error": "El archivo Excel está vacío o tiene un formato incorrecto"}
 
+        # Limpiar la columna "Cód. Barras" para que contenga solo números sin espacios
+        df_original["Cód. Barras"] = df_original["Cód. Barras"].astype(str).str.replace(r'\D', '', regex=True)
+
         row_count = len(df_original)
         print(f"📊 Cantidad de filas en el archivo: {row_count}")
 
