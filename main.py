@@ -78,7 +78,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
         print(f"✅ ChromeDriver cargado correctamente desde: {chromedriver_path}")
 
         driver.get('https://www.carulla.com')
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
         )
 
@@ -87,7 +87,7 @@ async def procesar_archivo(file: UploadFile = File(...)):
             print(f"🔍 Buscando código de barras: {codigo_barras}")
 
             try:
-                search_field = WebDriverWait(driver, 15).until(
+                search_field = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/header/section/div/div[1]/div[2]/form/input'))
                 )
                 search_field.clear()
