@@ -27,4 +27,4 @@ RUN pip install --upgrade pip && \
     pip install numpy==1.24.4 && \
     pip install -r requirements.txt
 
-CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:$PORT", "--timeout", "120"]
+CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:10000", "--timeout", "120"]
