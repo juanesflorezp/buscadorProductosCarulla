@@ -16,22 +16,22 @@ from random import uniform
 app = Flask(__name__)
 
 def configure_selenium():
-    """Configuración mejorada para Render con manejo robusto de errores"""
     chrome_options = Options()
-    chrome_options.binary_location = "/usr/bin/chromium-browser"
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--remote-debugging-port=9222")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     
     try:
-        service = Service(executable_path="/usr/bin/chromedriver")
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(20)
+        # Usa webdriver-manager para evitar rutas fijas
+        from webdriver_manager.chrome import ChromeDriverManager
+        driver = webdriver.Chrome(
+            ChromeDriverManager().install(),
+            options=chrome_options
+        )
         return driver
     except Exception as e:
-        raise RuntimeError(f"No se pudo iniciar ChromeDriver: {str(e)}")
+        raise RuntimeError(f"Error al iniciar Chrome: {str(e)}")
 
 @app.route('/api/scrape', methods=['POST'])
 def api_scrape():
