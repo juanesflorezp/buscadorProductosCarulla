@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 import pandas as pd
 import time
 from selenium import webdriver
@@ -11,11 +11,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import io
+from random import uniform
 
 app = Flask(__name__)
 
 def configure_selenium():
-    """Configuración optimizada para Render"""
+    """Configuración mejorada para Render con manejo robusto de errores"""
     chrome_options = Options()
     chrome_options.binary_location = "/usr/bin/chromium-browser"
     chrome_options.add_argument("--headless")
@@ -24,56 +25,62 @@ def configure_selenium():
     chrome_options.add_argument("--remote-debugging-port=9222")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     
-    service = Service(executable_path="/usr/bin/chromedriver")
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_page_load_timeout(15)
-    return driver
+    try:
+        service = Service(executable_path="/usr/bin/chromedriver")
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_page_load_timeout(20)
+        return driver
+    except Exception as e:
+        raise RuntimeError(f"No se pudo iniciar ChromeDriver: {str(e)}")
 
 @app.route('/api/scrape', methods=['POST'])
 def api_scrape():
-    """Endpoint principal para scraping"""
+    """Endpoint principal con mejor manejo de errores y tiempo de respuesta"""
     try:
+        # Validación del archivo
         if 'file' not in request.files:
-            return {"error": "No se envió archivo"}, 400
+            return jsonify({"error": "No se envió archivo"}), 400
 
         file = request.files['file']
         if file.filename == '':
-            return {"error": "Nombre de archivo vacío"}, 400
+            return jsonify({"error": "Nombre de archivo vacío"}), 400
 
-        # Procesar archivo
         try:
             df = pd.read_excel(file)
             if "Cód. Barras" not in df.columns:
-                return {"error": "El archivo debe contener columna 'Cód. Barras'"}, 400
+                return jsonify({"error": "El archivo debe contener columna 'Cód. Barras'"}), 400
         except Exception as e:
-            return {"error": f"Error al leer archivo: {str(e)}"}, 400
+            return jsonify({"error": f"Error al leer archivo: {str(e)}"}), 400
 
-        # Configurar resultados
+        # Limitar cantidad de productos para evitar timeout
+        if len(df) > 10:
+            return jsonify({"error": "Máximo 10 productos por request (límite de Render)"}), 400
+
         df["Descripción_Carulla"] = None
         df["Precio_Carulla"] = None
-        driver = configure_selenium()
-
+        
         try:
+            driver = configure_selenium()
             driver.get('https://www.carulla.com')
             time.sleep(2)
 
             for index, row in df.iterrows():
                 codigo = str(row["Cód. Barras"]).strip()
                 try:
-                    # Búsqueda
-                    search = WebDriverWait(driver, 13).until(
+                    # Búsqueda con timeout reducido
+                    search = WebDriverWait(driver, 8).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']"))
                     )
                     search.clear()
                     search.send_keys(codigo + Keys.ENTER)
-                    time.sleep(1.5)
+                    time.sleep(uniform(1.0, 2.5))  # Delay aleatorio
 
-                    # Extraer datos (selectores actualizados Oct 2023)
-                    nombre = WebDriverWait(driver, 13).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "h3[data-testid='product-title']"))
+                    # Extracción de datos con selectores robustos
+                    nombre = WebDriverWait(driver, 8).until(
+                        EC.visibility_of_element_located((By.CSS_SELECTOR, "h3[itemprop='name'], h3[data-testid='product-title']"))
                     ).text
-                    precio = driver.find_element(
-                        By.CSS_SELECTOR, "span[data-testid='product-price']"
+                    precio = WebDriverWait(driver, 5).until(
+                        EC.visibility_of_element_located((By.CSS_SELECTOR, "span[itemprop='price'], span[data-testid='product-price']"))
                     ).text
 
                     df.at[index, "Descripción_Carulla"] = nombre
@@ -83,9 +90,9 @@ def api_scrape():
                     df.at[index, "Descripción_Carulla"] = "No encontrado"
                     df.at[index, "Precio_Carulla"] = "No encontrado"
                 
-                time.sleep(1)  # Delay anti-bloqueo
+                time.sleep(uniform(1.0, 3.0))  # Delay aleatorio anti-bloqueo
 
-            # Generar Excel
+            # Generación segura del Excel
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False)
@@ -99,17 +106,18 @@ def api_scrape():
             )
 
         except Exception as e:
-            return {"error": f"Error en scraping: {str(e)}"}, 500
+            return jsonify({"error": f"Error durante el scraping: {str(e)}"}), 500
 
         finally:
-            driver.quit()
+            if 'driver' in locals():
+                driver.quit()
 
     except Exception as e:
-        return {"error": f"Error interno: {str(e)}"}, 500
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 @app.route('/')
 def home():
-    return "API Scraping Carulla - Enviar POST a /api/scrape con archivo Excel"
+    return "API Scraping Carulla - Enviar POST a /api/scrape con archivo Excel (Máx. 10 productos)"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
