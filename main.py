@@ -68,7 +68,7 @@ def api_scrape():
                 codigo = str(row["Cód. Barras"]).strip()
                 try:
                     # Búsqueda con timeout reducido
-                    search = WebDriverWait(driver, 8).until(
+                    search = WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='search']"))
                     )
                     search.clear()
@@ -76,10 +76,10 @@ def api_scrape():
                     time.sleep(uniform(1.0, 2.5))  # Delay aleatorio
 
                     # Extracción de datos con selectores robustos
-                    nombre = WebDriverWait(driver, 8).until(
+                    nombre = WebDriverWait(driver, 10).until(
                         EC.visibility_of_element_located((By.CSS_SELECTOR, "h3[itemprop='name'], h3[data-testid='product-title']"))
                     ).text
-                    precio = WebDriverWait(driver, 5).until(
+                    precio = WebDriverWait(driver, 10).until(
                         EC.visibility_of_element_located((By.CSS_SELECTOR, "span[itemprop='price'], span[data-testid='product-price']"))
                     ).text
 
@@ -90,7 +90,7 @@ def api_scrape():
                     df.at[index, "Descripción_Carulla"] = "No encontrado"
                     df.at[index, "Precio_Carulla"] = "No encontrado"
                 
-                time.sleep(uniform(1.0, 3.0))  # Delay aleatorio anti-bloqueo
+                time.sleep(7)  # Delay aleatorio anti-bloqueo
 
             # Generación segura del Excel
             output = io.BytesIO()
